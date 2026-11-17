@@ -50,18 +50,18 @@ public class GrahamScan {
         }
 
         // ---------- SORT #1 : find the start point ----------
-        ConvexHullSorts.selectionSortByY(pts);
+        SortByY.selectionSortByY(pts);
         checkSort1(input);
         Point2D p = pts[0];
         status[0] = ON_PATH;
-        addStep("Sort #1: selection sort by y",
-                "After Sort #1, pts[0] = p = " + p + ". The lowest point is ALWAYS on the fence, so it turns green.",
+        addStep("Part 1: selection sort by y",
+                "After Part 1, pts[0] = p = " + p + ". The lowest point is ALWAYS on the fence, so it turns green.",
                 true, false, false);
 
         // ---------- SORT #2 : order the rest by polar angle ----------
-        ConvexHullSorts.insertionSortByPolarAngle(pts, p);
+        SortByPolarAngle.insertionSortByPolarAngle(pts, p);
         checkSort2(input);
-        addStep("Sort #2: insertion sort by polar angle",
+        addStep("Part 2: insertion sort by polar angle",
                 "Points are numbered 1.." + (n - 1) + " by angle around p, sweeping counterclockwise like a radar.",
                 true, true, true);
 
@@ -120,18 +120,18 @@ public class GrahamScan {
 
     private void checkSort1(Point2D[] original) {
         if (!sameSet(original, pts)) {
-            warnings.add("Sort #1 lost or duplicated points -- only use exch() to move points.");
+            warnings.add("Part 1 lost or duplicated points -- only use exch() to move points.");
             return;
         }
         for (int i = 1; i < pts.length; i++) {
-            if (Point2D.compareByY(pts[i], pts[0]) < 0) {
-                warnings.add("Sort #1 (selectionSortByY) is not finished: pts[0] is not the lowest point.");
-                return;
-            }
-        }
-        for (int i = 1; i < pts.length; i++) {
-            if (Point2D.compareByY(pts[i - 1], pts[i]) > 0) {
-                warnings.add("Sort #1 found p, but the array is not fully sorted by y (index " + i + ").");
+            if (checkY(pts[i - 1], pts[i]) > 0) {
+                Point2D a = pts[i - 1], b = pts[i];
+                if (Integer.signum(SortByY.compareByY(a, b)) != checkY(a, b)) {
+                    warnings.add("Part 1a: compareByY(" + a + ", " + b + ") should return "
+                            + signed(checkY(a, b)) + " but returned " + SortByY.compareByY(a, b) + ".");
+                } else {
+                    warnings.add("Part 1b: selectionSortByY did not sort the points (index " + i + ").");
+                }
                 return;
             }
         }
@@ -139,30 +139,52 @@ public class GrahamScan {
 
     private void checkSort2(Point2D[] original) {
         if (!sameSet(original, pts)) {
-            warnings.add("Sort #2 lost or duplicated points -- only use exch() to move points.");
+            warnings.add("Part 2 lost or duplicated points -- only use exch() to move points.");
             return;
         }
         Point2D lowest = original[0];
-        for (Point2D q : original) if (Point2D.compareByY(q, lowest) < 0) lowest = q;
-        boolean sort1Worked = warnings.isEmpty();
-        if (sort1Worked && !pts[0].equals(lowest)) {
-            warnings.add("Sort #2 moved p out of pts[0]! Start your loops at index 1 or 2.");
+        for (Point2D q : original) if (checkY(q, lowest) < 0) lowest = q;
+        if (!warnings.isEmpty()) return;   // fix Part 1 first
+        if (!pts[0].equals(lowest)) {
+            warnings.add("Part 2b moved p out of pts[0]! Start i at 2 and stop j at 1.");
             return;
         }
+        Point2D p = pts[0];
         for (int i = 2; i < pts.length; i++) {
-            if (Point2D.compareByPolarAngle(pts[0], pts[i - 1], pts[i]) > 0) {
-                warnings.add("Sort #2 (insertionSortByPolarAngle) is not working: points " + (i - 1) + " and " + i + " are out of order.");
+            Point2D a = pts[i - 1], b = pts[i];
+            if (checkAngle(p, a, b) > 0) {
+                if (Integer.signum(SortByPolarAngle.compareByPolarAngle(p, a, b)) != checkAngle(p, a, b)) {
+                    warnings.add("Part 2a: compareByPolarAngle(p, " + a + ", " + b + ") should return "
+                            + signed(checkAngle(p, a, b)) + " but returned " + SortByPolarAngle.compareByPolarAngle(p, a, b) + ".");
+                } else {
+                    warnings.add("Part 2b: insertionSortByPolarAngle did not sort the points (" + (i - 1) + " and " + i + ").");
+                }
                 return;
             }
         }
+    }
+
+    private static String signed(int v) { return v > 0 ? "+1 (b first)" : v < 0 ? "-1 (a first)" : "0"; }
+
+    // Independent checkers used to grade YOUR methods. (They work differently on purpose.)
+    static int checkY(Point2D a, Point2D b) {
+        int c = Double.compare(a.y(), b.y());
+        return c != 0 ? Integer.signum(c) : Integer.signum(Double.compare(a.x(), b.x()));
+    }
+
+    static int checkAngle(Point2D p, Point2D a, Point2D b) {
+        double ta = Math.atan2(a.y() - p.y(), a.x() - p.x());
+        double tb = Math.atan2(b.y() - p.y(), b.x() - p.x());
+        if (Math.abs(ta - tb) > 1e-12) return ta < tb ? -1 : +1;
+        return Integer.signum(Double.compare(p.distanceSquaredTo(a), p.distanceSquaredTo(b)));
     }
 
     private static boolean sameSet(Point2D[] a, Point2D[] b) {
         if (a.length != b.length) return false;
         Point2D[] x = a.clone(), y = b.clone();
         for (Point2D q : y) if (q == null) return false;
-        Arrays.sort(x, Point2D::compareByY);
-        Arrays.sort(y, Point2D::compareByY);
+        Arrays.sort(x, GrahamScan::checkY);
+        Arrays.sort(y, GrahamScan::checkY);
         for (int i = 0; i < x.length; i++) if (!x[i].equals(y[i])) return false;
         return true;
     }

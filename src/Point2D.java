@@ -6,14 +6,10 @@
  *
  *  *** YOU DO NOT NEED TO CHANGE THIS FILE. ***
  *
- * The two compare methods at the bottom are the "rules" your sorts use:
- *   compareByY(a, b)              -> used by Sort #1 (selection sort)
- *   compareByPolarAngle(p, a, b)  -> used by Sort #2 (insertion sort)
- *
- * Both follow the usual Java convention:
- *   negative  ->  a comes BEFORE b
- *   zero      ->  a and b are tied
- *   positive  ->  a comes AFTER b
+ * Methods you will use in SortByY.java and SortByPolarAngle.java:
+ *   a.x(), a.y()               the coordinates of point a
+ *   Point2D.ccw(a, b, c)       +1 left turn, -1 right turn, 0 straight line
+ *   p.distanceSquaredTo(a)     (distance from p to a) squared
  */
 public class Point2D {
 
@@ -46,36 +42,6 @@ public class Point2D {
         double dx = this.x - that.x;
         double dy = this.y - that.y;
         return dx * dx + dy * dy;
-    }
-
-    /**
-     * Rule for SORT #1.
-     * Compares two points by y-coordinate (smaller y comes first).
-     * If the y-coordinates are tied, the point with the smaller x comes first.
-     */
-    public static int compareByY(Point2D a, Point2D b) {
-        if (a.y < b.y) return -1;
-        if (a.y > b.y) return +1;
-        if (a.x < b.x) return -1;
-        if (a.x > b.x) return +1;
-        return 0;
-    }
-
-    /**
-     * Rule for SORT #2.
-     * Compares a and b by the polar angle they make with the start point p
-     * (angle measured counterclockwise from the positive x-direction).
-     *
-     * Notice there is no trigonometry!  Because p is the lowest point, every
-     * other point is "above" p, so we can use ccw():
-     *   if p -> a -> b turns LEFT, then b's angle is bigger, so a comes first.
-     * If p, a, b are on one line (same angle), the point closer to p comes first.
-     */
-    public static int compareByPolarAngle(Point2D p, Point2D a, Point2D b) {
-        int turn = ccw(p, a, b);
-        if (turn > 0) return -1;   // a has the smaller angle
-        if (turn < 0) return +1;   // b has the smaller angle
-        return Double.compare(p.distanceSquaredTo(a), p.distanceSquaredTo(b));
     }
 
     @Override
