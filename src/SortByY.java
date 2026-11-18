@@ -43,8 +43,9 @@ public class SortByY {
      * Use a.x(), a.y(), b.x(), b.y() to get the coordinates.
      */
     public static int compareByY(Point2D a, Point2D b) {
-        // TODO 1a: replace this line with your four steps
-        return 0;
+        double ay = a.y();
+        double by = b.y();
+        return ay == by ? Double.compare(a.x(), b.x()) : (ay < by ? -1 : 1);
     }
 
     /**
@@ -76,10 +77,17 @@ public class SortByY {
      *   ( | marks the boundary: everything left of it is in its final spot )
      */
     public static void selectionSortByY(Point2D[] pts) {
-        // TODO 1b: write selection sort here
+        for (int i = 0; i < pts.length - 1; i++) {
+            int least = i;
 
+            for (int j = i+1; j < pts.length; j++) {
+                if (compareByY(pts[j], pts[least]) < 0) {
+                    least = j;
+                }
+            }
 
-
+            exch(pts, i, least);
+        }
     }
 
     /** Swap pts[i] and pts[j]. (Given -- use it!) */
